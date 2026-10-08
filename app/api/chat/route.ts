@@ -1,18 +1,44 @@
 // app/api/chat/route.ts
-import type { Message } from 'ollama';
+import { pool } from '@/lib/db';
+import { embed, toSql } from '@/lib/embed';
 import { chatStream } from '@/lib/stream';
+import { buildSystemPrompt, NO_ANSWER_BG, NO_ANSWER_EN } from '@/lib/prompt';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+const MIN_SIMILARITY = 0.55;
+
+const isCyrillic = (s: string) => /[\u0400-\u04FF]/.test(s);
 
 export async function POST(req: Request) {
-  const { messages }: { messages: Message[] } = await req.json();
+  const { messages } = await req.json();
+  const question = messages[messages.length - 1].content;
 
-  try {
-    return new Response(await chatStream(messages), {
+  const [vec] = await embed(question);
+  const { rows } = await pool.query(
+    `SELECT content, 1 - (embedding <=> $1::vector) AS similarity
+     FROM documents
+     ORDER BY embedding <=> $1::vector
+     LIMIT 4`,
+    [toSql(vec)],
+  );
+
+  console.log(rows.map((r) => Number(r.similarity).toFixed(2)));
+
+  const relevant = rows.filter((r) => r.similarity >= MIN_SIMILARITY);
+
+  if (relevant.length === 0) {
+    return new Response(isCyrillic(question) ? NO_ANSWER_BG : NO_ANSWER_EN, {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
-  } catch (err) {
-    return new Response(`Failed to fetch from Ollama: + ${err}`, { status: 502 });
   }
+
+  const context = relevant.map((r) => r.content).join('\n---\n');
+
+  const stream = await chatStream([
+    { role: 'system', content: buildSystemPrompt(context) },
+    ...messages.slice(-8),
+  ]);
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
 }

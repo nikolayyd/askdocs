@@ -8,17 +8,25 @@ export const chatStream = async (messages: Message[]) => {
     model: process.env.OLLAMA_MODEL!,
     messages,
     stream: true,
-    options: { num_ctx: 4096 },
+    think: false,
+    options: { num_ctx: 8192, temperature: 0.2 },
   });
 
   const encoder = new TextEncoder();
 
   return new ReadableStream({
     async start(controller) {
-      for await (const part of stream) {
-        controller.enqueue(encoder.encode(part.message.content));
+      try {
+        for await (const part of stream) {
+          controller.enqueue(encoder.encode(part.message.content));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
       }
-      controller.close();
+    },
+    cancel() {
+      stream.abort();
     },
   });
 };
