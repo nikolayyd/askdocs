@@ -1,10 +1,9 @@
 // lib/embed.ts
-import { Ollama } from 'ollama';
-
-const ollama = new Ollama({ host: process.env.OLLAMA_URL });
+import ollama from 'ollama';
+const EMBED_MODEL = process.env.EMBED_MODEL ?? 'bge-m3';
 
 export const embed = async (input: string | string[]) => {
-  const res = await ollama.embed({ model: 'nomic-embed-text', input });
+  const res = await ollama.embed({ model: EMBED_MODEL, input });
   return res.embeddings;
 };
 
