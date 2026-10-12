@@ -26,6 +26,7 @@ export const chatStream = async (messages: Message[]) => {
       }
     },
     cancel() {
+      
       stream.abort();
     },
   });

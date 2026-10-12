@@ -21,26 +21,31 @@ const ChatInput = ({ value, onChange, onSend, loading = false }: Props) => {
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [value]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
       onSend();
     }
   };
 
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+    <div className="chat-input">
       <textarea
         ref={ref}
         rows={1}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Write a message..."
-        style={{ flex: 1, resize: 'none', padding: 8 }}
+        placeholder="Ask a question about your documents…"
+        aria-label="Your message"
       />
-      <button onClick={onSend} disabled={loading || !value.trim()}>
-        {loading ? '...' : 'Send'}
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={loading || !value.trim()}
+        aria-label="Send message"
+      >
+        {loading ? '…' : '↑'}
       </button>
     </div>
   );

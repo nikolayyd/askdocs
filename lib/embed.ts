@@ -1,10 +1,7 @@
-import ollama from 'ollama';
+import { Ollama } from 'ollama';
 
 const EMBED_MODEL = process.env.EMBED_MODEL ?? 'bge-m3';
-
-if (!EMBED_MODEL) {
-  throw new Error('EMBED_MODEL environment variable is not set');
-}
+const ollama = new Ollama({ host: process.env.OLLAMA_URL });
 
 export const embed = async (input: string | string[]): Promise<number[][]> => {
   try {
